@@ -1,45 +1,69 @@
-// dependencies
+// - - - - = = = = Dependencies = = = = - - - - 
 const express = require('express');
-const faker = require('faker');
+const env = process.env.NODE_ENV || 'development';
+const config = require('./config')[env];
+const mysql = require('mysql');
 const path = require('path');
 const bodyParser = require('body-parser');
-const mysql = require('mysql');
-// const favicon = require('serve-favicon');
-
+const session = require('express-session');
+const favicon = require('serve-favicon');
+const faker = require('faker');
 const app = express();
 
-// db connection
-const db_connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'joinusDB'
-});
-
-db_connection.connect();
-
-db_connection.query('SELECT 1 + 1 AS solution', function (error, results, fields) {
+// - - - - = = = = Database Connection = = = = - - - - 
+const db_connection = mysql.createConnection(config.database);
+db_connection.connect(() => console.log('* * * DB connection open * * *'));
+let q = 'SELECT CURTIME() AS TIME, CURDATE() AS date, NOW() as now';
+db_connection.query(q, function (error, results, fields) {
     if (error) throw error;
-    console.log('The solution is: ', results[0].solution);
+    console.log(results[0].date);
+    console.log(results);
   });
-   
-  db_connection.end();
+db_connection.end(() => console.log('* * * DB connection closed * * *'));
 
-// view engine setup
+// - - - - = = = = Middleware = = = = - - - - 
+app.use(session( config.session ));
 app.set('views', path.join(__dirname, './views'));
 app.set('view engine', 'ejs');
-
-//middle ware
 app.use(express.static(path.join(__dirname, './public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// routes
-app.get('/', function(req, res) {
-    res.render('index');
-})
+// - - - - = = = = Controllers = = = = - - - - 
+const userController = {
+    index: (request, response) => {
+  
+    },
+    getOne: (request, response) => {
 
-const app_port = 8200;
-app.listen(app_port, function() {
-    console.log(`Listening on port ${app_port}...`);
+    },
+    create: (request, response) => {
+  
+    },
+    edit: (request, response) => {
+
+    },
+    delete: (request, response) => {
+
+    }
+  };
+
+const route = {
+    home: (request, response) => {
+        response.render('index');
+    }
+};
+
+// - - - - = = = = Routes = = = = - - - - 
+app 
+    .get('/api/user', userController.index)
+    .post('/api/user', userController.create)
+    .get('/api/user/:id', userController.getOne)
+    .put('/api/user/:id', userController.edit)
+    .delete('/api/user/:id', userController.delete)
+    .get('/', route.home)
+    .all("*", (req,res,next) => {
+        res.render('towel');
 });
+
+app.listen(config.server.port, () => console.log(`Express server listening on port ${config.server.port}`));

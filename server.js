@@ -8,18 +8,13 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const favicon = require('serve-favicon');
 const faker = require('faker');
+const Schema = require('./models/Schema');
+const User = require('./models/user');
 const app = express();
 
 // - - - - = = = = Database Connection = = = = - - - - 
 const db_connection = mysql.createConnection(config.database);
-db_connection.connect(() => console.log('* * * DB connection open * * *'));
-let q = 'SELECT CURTIME() AS TIME, CURDATE() AS date, NOW() as now';
-db_connection.query(q, function (error, results, fields) {
-    if (error) throw error;
-    console.log(results[0].date);
-    console.log(results);
-  });
-db_connection.end(() => console.log('* * * DB connection closed * * *'));
+Schema.migrate(new User);
 
 // - - - - = = = = Middleware = = = = - - - - 
 app.use(session( config.session ));
@@ -30,40 +25,47 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // - - - - = = = = Controllers = = = = - - - - 
-const userController = {
-    index: (request, response) => {
-  
-    },
-    getOne: (request, response) => {
+const controller = {
+    getAll: (request, response) => {
+        let q = 'SELECT user_id AS id, email, created_at, updated_at FROM users;';
+        db_connection.query(q, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+            } else {
+                response.render('index', {data: results});
 
+                // ORM
+                let user = new User(results[results.length-1]);
+                console.log(user.id);
+                console.log(user.email);
+                console.log(user.created_at);
+                console.log(user.updated_at);
+            }
+        });
     },
-    create: (request, response) => {
-  
+    createUser: (request, response) => {
+        let q = `INSERT INTO users (email) VALUES ('${request.body.email}');`;
+        db_connection.query(q, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+            }
+
+        });
+        response.redirect('/');
     },
-    edit: (request, response) => {
-
-    },
-    delete: (request, response) => {
-
-    }
-  };
-
-const route = {
-    home: (request, response) => {
-        response.render('index');
-    }
+    towel: (request, response) => { response.render('towel') }
 };
 
 // - - - - = = = = Routes = = = = - - - - 
 app 
-    .get('/api/user', userController.index)
-    .post('/api/user', userController.create)
-    .get('/api/user/:id', userController.getOne)
-    .put('/api/user/:id', userController.edit)
-    .delete('/api/user/:id', userController.delete)
-    .get('/', route.home)
-    .all("*", (req,res,next) => {
-        res.render('towel');
-});
+    .get('/', controller.getAll)
+    .post('/api/user', controller.createUser)
+    .all("*", controller.towel)
 
 app.listen(config.server.port, () => console.log(`Express server listening on port ${config.server.port}`));
+
+// .get('/api/user', userController.index)
+// .post('/api/user', userController.create)
+// .get('/api/user/:id', userController.getOne)
+// .put('/api/user/:id', userController.edit)
+// .delete('/api/user/:id', userController.delete)

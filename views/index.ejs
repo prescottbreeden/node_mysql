@@ -8,5 +8,18 @@
 </head>
 <body>
     success...
+    <p>total users: <%= data.length %>  </p>
+    <% for(let i = 0; i < data.length; i++) { %>
+        <div class="user">
+            <p>ID: "<%= data[i].id %></p>
+            <p>User: "<%= data[i].email %>"</p>
+        </div>
+            <% } %> 
+
+    <form action="/api/user" method="POST">
+        <label for="email">Email: </label>
+        <input type="text" name="email">
+        <button>Submit</button>
+    </form>
 </body>
 </html>
